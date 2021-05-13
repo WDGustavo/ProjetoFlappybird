@@ -6,6 +6,8 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.ScreenUtils;
 
+import java.util.Random;
+
 public class Jogo extends ApplicationAdapter {
 	//*criação das variaveis
 	SpriteBatch batch;
@@ -20,13 +22,20 @@ public class Jogo extends ApplicationAdapter {
 	private float gravidade = 0;
 	private float posicaoInicialVerticalPassaro= 0;
 	private float posicaoInicialCano;
+	private float espacoCano;
 	private int movimentaY = 0;
 	private int movimentaX = 0;
+
+	//variavel criada para um teste para fazer os canos aparecerem em posições diferentes sem usar as outras imagens(sera retirado quando usar troca de imagens)
+	private float alturaCanoRandom;
+	private Random numeroRandom;
 	//*
 	
 	@Override
 	public void create () {
 		batch = new SpriteBatch();
+		//cria numero randomico(sera retirado quando usar troca de imagens)
+		numeroRandom = new Random();
 		pegarImagens();
 		configuraPosicaoLarguraeAltura();
 
@@ -39,6 +48,7 @@ public class Jogo extends ApplicationAdapter {
 		//posicionamento dos canos na tela
 		posicaoInicialVerticalPassaro = alturaDispositivo/2;
 		posicaoInicialCano = larguraDispositivo;
+		espacoCano = 150;
 		//*
 	}
 
@@ -52,7 +62,7 @@ public class Jogo extends ApplicationAdapter {
 		passaros[1] = new Texture("passaro2.png");
 		passaros[2] = new Texture("passaro3.png");
 		//pega a imagem do cano
-		canoBaixo = new Texture("cano_baixo.png");
+		canoBaixo = new Texture("cano_baixo_maior.png");
 		canoTopo = new Texture("cano_topo_maior.png");
 
 		//*lista criado para pooder randomizar a posição dos canos (ainda estou tentando fazer funcionar)
@@ -112,10 +122,12 @@ public class Jogo extends ApplicationAdapter {
 		//faz um "loop" para sempre aparecer um obstaculo
 		if(posicaoInicialCano <-canoTopo.getWidth()){
 			posicaoInicialCano = larguraDispositivo;
+			//faz a troca de posição dos canos (sera retirado quando usar troca de imagens)
+			alturaCanoRandom = numeroRandom.nextInt(400)-200;
 		}
 		//coloca os canos na tela e configura a altura e largura
-		batch.draw(canoBaixo,posicaoInicialCano,0);
-		batch.draw(canoTopo,posicaoInicialCano,alturaDispositivo/2);
+		batch.draw(canoBaixo,posicaoInicialCano,alturaDispositivo/2 - canoBaixo.getHeight() - espacoCano/2 + alturaCanoRandom);
+		batch.draw(canoTopo,posicaoInicialCano,alturaDispositivo/2 + espacoCano + alturaCanoRandom);
 		//movimentação do cano na tela
 		posicaoInicialCano -= Gdx.graphics.getDeltaTime()*200;
 	}
