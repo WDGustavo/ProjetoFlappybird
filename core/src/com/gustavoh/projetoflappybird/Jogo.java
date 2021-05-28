@@ -2,6 +2,8 @@ package com.gustavoh.projetoflappybird;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Preferences;
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
@@ -27,6 +29,9 @@ public class Jogo extends ApplicationAdapter {
     BitmapFont textoReiniciar;
     BitmapFont textoMelhorPontuacao;
 
+    Sound somVoando;
+    Sound somColisao;
+    Sound somPontuacao;
 
     private float larguraDispositivo;
     private float alturaDispositivo;
@@ -35,8 +40,10 @@ public class Jogo extends ApplicationAdapter {
     private float posicaoInicialCanoHorizontal;
 	private float posicaoInicialCanoVertical;
     private float espacoCano;
+    private float posicaoHorzontalPassaro = 0;
     private int pontos = 0;
 	private int gravidade = 0;
+	private int pontuacaoMaxima;
     private Random numeroRandom;
 	private boolean passouCano = false;
     private int estadoJogo = 0;
@@ -45,6 +52,7 @@ public class Jogo extends ApplicationAdapter {
 	private Rectangle retanguloCanoCima;
 	private Rectangle retanguloCanoBaixo;
 
+	Preferences preferencias;
     //*
 
     @Override
@@ -85,6 +93,14 @@ public class Jogo extends ApplicationAdapter {
         circuloPassaro = new Circle();
         retanguloCanoBaixo = new Rectangle();
         retanguloCanoCima = new Rectangle();
+        //cria as variaveis para pegar os sounds
+        somVoando = Gdx.audio.newSound(Gdx.files.internal("som_asa.wav"));
+        somColisao = Gdx.audio.newSound(Gdx.files.internal("som_batida.wav"));
+        somPontuacao = Gdx.audio.newSound(Gdx.files.internal("som_pontos.wav"));
+        //variavel para setar as preferencias
+        preferencias = Gdx.app.getPreferences("flappyBird");
+        //variavel para a pontuação maxima
+        pontuacaoMaxima = preferencias.getInteger("pontuacaoMaxima",0);
     }
 
     private void pegarImagens() {
@@ -132,8 +148,13 @@ public class Jogo extends ApplicationAdapter {
         //*
         //se bateu mostra que bateu no logcat
 		if(bateuCanoBaixo || bateuCanoCima){
-			Gdx.app.log("Log", "Bateu");
-			estadoJogo = 2;
+			if(estadoJogo ==1){
+			    //toca o som ao colidir
+			    somColisao.play();
+			    //muda o estado do jogo para 2
+                estadoJogo = 2;
+            }
+
 		}
 	}
 
@@ -145,6 +166,8 @@ public class Jogo extends ApplicationAdapter {
     		    //da ponto
     			pontos++;
     			passouCano = true;
+    			//toca o som de pontuação
+    			somPontuacao.play();
 			}
 		}
         //faz a velocidade da troca de animação
@@ -164,7 +187,7 @@ public class Jogo extends ApplicationAdapter {
 		batch.draw(fundo, 0, 0, larguraDispositivo, alturaDispositivo);
 
 		//coloca o passaro no app e configura sua posição e movimentação
-		batch.draw(passaros[(int) variacao], 50, posicaoInicialVerticalPassaro);
+		batch.draw(passaros[(int) variacao], 50 + posicaoHorzontalPassaro, posicaoInicialVerticalPassaro);
 
 		//coloca os canos na tela e configura a altura e largura
 		batch.draw(canoBaixo, posicaoInicialCanoHorizontal, alturaDispositivo / 2 - canoBaixo.getHeight() - espacoCano / 2 + posicaoInicialCanoVertical);
@@ -180,7 +203,7 @@ public class Jogo extends ApplicationAdapter {
             textoReiniciar.draw(batch, "TOQUE NA TELA PARA REINICIAR!",
                     larguraDispositivo / 2 -400, alturaDispositivo / 2 - gameOver.getHeight()/2);
             //coloca na tela a mensagem mostrando a melhor pontuação
-            textoMelhorPontuacao.draw(batch, "SUA MELHOR PONTUAÇÃO É: 0 PONTOS",
+            textoMelhorPontuacao.draw(batch, "SUA MELHOR PONTUAÇÃO É:"+ pontuacaoMaxima+" PONTOS",
                     larguraDispositivo / 2-400, alturaDispositivo / 2-gameOver.getHeight()*2);
         }
 
@@ -197,7 +220,10 @@ public class Jogo extends ApplicationAdapter {
             //se tocar na tela perde 15 de gravidade
             if (toqueTela) {
                 gravidade = -15;
+                //muda o estado do jogo para 1
                 estadoJogo =1;
+                //toca o som de asa
+                somVoando.play();
             }
         }
         //estado onde o jogo esta rodando
@@ -205,6 +231,8 @@ public class Jogo extends ApplicationAdapter {
             //se tocar na tela perde 10 de gravidade
             if (toqueTela) {
                 gravidade = -15;
+                //toca o som de asa
+                somVoando.play();
             }
             //Canos
             //faz um "loop" para sempre aparecer um obstaculo
@@ -230,6 +258,32 @@ public class Jogo extends ApplicationAdapter {
         }
         //estado do gameover
         else if(estadoJogo ==2){
+            //se a pontuação for maior que a pontuação maxima
+            if (pontos > pontuacaoMaxima) {
+                //pontuação maxima salva o ponto mais alto
+                pontuacaoMaxima = pontos;
+                //grava a pontuação maxima
+                preferencias.putInteger("pontuacaoMaxima",pontuacaoMaxima);
+            }
+            //jogo o passaro para traz
+            posicaoHorzontalPassaro -=Gdx.graphics.getDeltaTime()*500;
+            //ao tocar na tela
+            if(toqueTela){
+                //estado do jogo vai para 0
+                estadoJogo =0;
+                //zera os pontos
+                pontos = 0;
+                //zera a gravidade
+                gravidade = 0;
+                //*sera a posição do passaro e coloca ele no meio da tela
+                posicaoHorzontalPassaro=0;
+                posicaoInicialVerticalPassaro=alturaDispositivo/2;
+                //*
+                //coloca o cano no começo da tela
+                posicaoInicialCanoHorizontal = larguraDispositivo;
+
+            }
+
         }
 
     }
